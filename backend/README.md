@@ -37,7 +37,7 @@ Preencha o `.env` (veja `.env.example`) e rode:
 uvicorn app.main:create_app --factory --reload
 ```
 
-Documentação interativa: <http://localhost:8000/docs>. Todas as rotas, exceto `/health`,
+Documentação interativa: <http://localhost:8000/docs>. As rotas de produtos
 exigem o token do Supabase Auth no header `Authorization: Bearer <token>`.
 
 | Rota | Descrição |
@@ -48,9 +48,21 @@ exigem o token do Supabase Auth no header `Authorization: Bearer <token>`.
 | `PATCH /products/{id}` | altera `target_price` e/ou `is_active` |
 | `DELETE /products/{id}` | exclui o produto e o histórico |
 | `GET /products/{id}/history?days=30` | histórico de preços (1 a 365 dias) |
+| `POST /jobs/check-prices` | inicia a verificação (somente cron) |
 | `GET /health` | verifica se a API está no ar |
 
 Erros seguem o formato `{"detail": "..."}`: 401 (login), 404 (produto inexistente ou de outro
 usuário), 409 (já cadastrado), 422 (dados inválidos ou loja não suportada), 502 (falha da loja)
 e 503 (Supabase indisponível). Nos erros de validação, `detail` é uma lista. Preços são enviados
 como texto (`"100.55"`), para não perder precisão.
+
+## Job de verificação
+
+Responde 202 e continua em segundo plano. Falhas ficam em `last_error` do produto e não
+interrompem os demais. Para disparar com a API no ar:
+
+```powershell
+curl.exe -X POST http://localhost:8000/jobs/check-prices -H "X-Cron-Secret: <CRON_SECRET>"
+```
+
+O job impede execuções simultâneas por processo: mantenha a API com um único worker.
