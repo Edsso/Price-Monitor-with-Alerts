@@ -20,6 +20,16 @@ const SUPABASE_STUB = `
     grant all on tables to anon, authenticated, service_role;
   alter default privileges in schema public
     grant execute on functions to anon, authenticated, service_role;
+  create schema extensions; create schema vault; create schema cron; create schema net;
+  create table vault.decrypted_secrets (name text, decrypted_secret text);
+  create table cron.job (jobname text, schedule text, command text);
+  create function cron.schedule(text, text, text) returns bigint language sql as
+    $$ insert into cron.job values ($1, $2, $3); select 1::bigint $$;
+  create table net.calls (url text, headers jsonb, timeout_ms int);
+  create function net.http_post(
+    url text, body jsonb, headers jsonb, timeout_milliseconds int
+  ) returns bigint language sql as
+    $$ insert into net.calls values (url, headers, timeout_milliseconds); select 1::bigint $$;
   insert into auth.users values ('${ANA}'), ('${BIA}');
 `;
 
@@ -47,7 +57,9 @@ beforeEach(async () => {
   db = await PGlite.create();
   await db.exec(SUPABASE_STUB);
   for (const file of (await readdir(MIGRATIONS)).sort()) {
-    await db.exec(await readFile(new URL(file, MIGRATIONS), "utf8"));
+    const sql = await readFile(new URL(file, MIGRATIONS), "utf8");
+    // pg_cron e pg_net não existem no PGlite; o stub acima simula as funções usadas.
+    await db.exec(sql.replace(/^create extension [^;]+;/gm, ""));
   }
 });
 
@@ -154,4 +166,27 @@ test("restrições rejeitam dados inválidos e URL repetida", async () => {
   await assert.rejects(createProduct(ANA), /duplicate key/);
   await assert.rejects(createProduct(ANA, { url: "ftp://x" }), /check constraint/);
   await assert.rejects(createProduct(ANA, { url: "https://y", price: 0 }), /check constraint/);
+});
+
+test("cron agenda a verificação e chama a API com o segredo", async () => {
+  const [job] = (await db.query("select * from cron.job")).rows;
+  assert.equal(job.schedule, "17 */6 * * *");
+  await db.exec(`insert into vault.decrypted_secrets values
+    ('price_monitor_api_url', 'https://api.exemplo.com/'),
+    ('price_monitor_cron_secret', 'segredo')`);
+  await db.exec(job.command);
+  const [call] = (await db.query("select * from net.calls")).rows;
+  assert.equal(call.url, "https://api.exemplo.com/jobs/check-prices");
+  assert.equal(call.headers["X-Cron-Secret"], "segredo");
+});
+
+test("cron não chama a API sem os segredos configurados", async () => {
+  await db.exec("select private.request_price_check()");
+  assert.equal((await db.query("select * from net.calls")).rows.length, 0);
+});
+
+test("usuário não dispara a verificação", async () => {
+  for (const role of ["anon", "authenticated"]) {
+    await assert.rejects(as(role, "select private.request_price_check()"), /permission denied/);
+  }
 });
