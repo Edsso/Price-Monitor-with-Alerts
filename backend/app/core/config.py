@@ -14,6 +14,8 @@ DEFAULT_USER_AGENT = (
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    cors_origins: list[str] = ["http://localhost:5173"]
+
     scraper_user_agent: str = DEFAULT_USER_AGENT
     scraper_timeout_seconds: float = Field(default=15.0, gt=0)
     scraper_max_attempts: int = Field(default=3, ge=1)
