@@ -36,6 +36,18 @@ class SupabaseSettings(BaseSettings):
     secret_key: SecretStr = Field(min_length=1)
 
 
+class JobSettings(BaseSettings):
+    """Configurações do job de verificação e dos e-mails."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    cron_secret: SecretStr = Field(min_length=32)
+    resend_api_key: SecretStr = Field(min_length=1)
+    email_from: str = "Monitor de Preços <onboarding@resend.dev>"
+    frontend_url: str = Field(default="http://localhost:5173", pattern=r"^https?://")
+    alert_interval_hours: int = Field(default=24, ge=1)
+
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()

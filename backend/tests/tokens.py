@@ -9,7 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from jwt.algorithms import ECAlgorithm
 from pydantic import SecretStr
 
-from app.core.config import SupabaseSettings
+from app.core.config import JobSettings, SupabaseSettings
 
 USER_ID = "00000000-0000-0000-0000-00000000000a"
 SUPABASE = SupabaseSettings(
@@ -17,6 +17,8 @@ SUPABASE = SupabaseSettings(
     publishable_key="publica",
     secret_key=SecretStr("secreta"),
 )
+CRON_SECRET = "s" * 32
+JOB = JobSettings(cron_secret=SecretStr(CRON_SECRET), resend_api_key=SecretStr("resend"))
 PRIVATE_KEY = ec.generate_private_key(ec.SECP256R1())
 
 
