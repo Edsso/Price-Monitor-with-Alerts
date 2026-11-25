@@ -3,6 +3,7 @@ from decimal import Decimal
 import pytest
 
 from app import cli
+from app.core.formatting import format_price
 from app.models.scrape import Availability, ScrapeResult, Store
 
 
@@ -15,7 +16,7 @@ from app.models.scrape import Availability, ScrapeResult, Store
     ],
 )
 def test_format_price(price: Decimal | None, currency: str, expected: str) -> None:
-    assert cli.format_price(price, currency) == expected
+    assert format_price(price, currency) == expected
 
 
 def test_prints_result(monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:

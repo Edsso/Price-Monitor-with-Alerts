@@ -7,9 +7,9 @@ import argparse
 import asyncio
 import sys
 from collections.abc import Sequence
-from decimal import Decimal
 
 from app.core.config import get_settings
+from app.core.formatting import format_price
 from app.models.scrape import Availability, ScrapeResult
 from app.scrapers.exceptions import ScraperError
 from app.scrapers.http import PageFetcher
@@ -20,13 +20,6 @@ _AVAILABILITY_LABELS = {
     Availability.OUT_OF_STOCK: "esgotado",
     Availability.UNKNOWN: "não informada",
 }
-
-
-def format_price(price: Decimal | None, currency: str) -> str:
-    if price is None:
-        return "indisponível"
-    number = f"{price:,.2f}".translate(str.maketrans(",.", ".,"))
-    return f"{'R$' if currency == 'BRL' else currency} {number}"
 
 
 def format_result(result: ScrapeResult) -> str:
