@@ -1,0 +1,11 @@
+{
+  "name": "price-monitor-database-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test schema.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0"
+  }
+}
