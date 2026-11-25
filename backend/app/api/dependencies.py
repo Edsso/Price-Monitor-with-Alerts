@@ -6,12 +6,14 @@ from typing import Annotated, cast
 import httpx
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import SecretStr
 
 from app.core.auth import AuthenticatedUser, InvalidTokenError, TokenVerifier
 from app.core.config import SupabaseSettings
 from app.repositories.client import user_client
 from app.repositories.products import ProductRepository
 from app.scrapers.http import PageFetcher
+from app.services.price_check import PriceCheckJob
 from app.services.products import ProductService
 
 _bearer = HTTPBearer(auto_error=False)
@@ -25,6 +27,8 @@ class Resources:
     http: httpx.AsyncClient
     fetcher: PageFetcher
     verifier: TokenVerifier
+    cron_secret: SecretStr
+    job: PriceCheckJob
 
 
 def get_resources(request: Request) -> Resources:

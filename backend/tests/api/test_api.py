@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 from app.core.config import Settings
 from app.main import create_app
 from tests.scrapers.helpers import load_fixture
-from tests.tokens import SUPABASE, USER_ID, make_jwks, make_token
+from tests.tokens import CRON_SECRET, JOB, SUPABASE, USER_ID, make_jwks, make_token
 
 PRODUCT_ID = "00000000-0000-0000-0000-000000000001"
 URL = "https://www.amazon.com.br/dp/B000000000"
@@ -71,6 +71,7 @@ def anonymous(world: World) -> Iterator[TestClient]:
             cors_origins=["http://localhost:5173"],
         ),
         SUPABASE,
+        JOB,
         store_transport=httpx.MockTransport(world.handle_store),
         supabase_transport=httpx.MockTransport(world.handle_supabase),
     )
@@ -260,3 +261,23 @@ def test_history_rejects_invalid_period(client: TestClient, days: str) -> None:
 def test_cors(anonymous: TestClient, origin: str, expected: str | None) -> None:
     response = anonymous.get("/health", headers={"Origin": origin})
     assert response.headers.get("Access-Control-Allow-Origin") == expected
+
+
+@pytest.mark.parametrize("secret", [None, "", "errado", CRON_SECRET + "x"])
+def test_job_requires_secret(anonymous: TestClient, world: World, secret: str | None) -> None:
+    headers = {} if secret is None else {"X-Cron-Secret": secret}
+    response = anonymous.post("/jobs/check-prices", headers=headers)
+    assert response.status_code == 401
+    assert world.requests == []
+
+
+def test_job_does_not_accept_user_login(client: TestClient) -> None:
+    assert client.post("/jobs/check-prices").status_code == 401
+
+
+def test_job_is_accepted_and_runs_with_service_key(anonymous: TestClient, world: World) -> None:
+    world.reply([])
+    response = anonymous.post("/jobs/check-prices", headers={"X-Cron-Secret": CRON_SECRET})
+    assert response.status_code == 202
+    assert world.requests[0].headers["apikey"] == "secreta"
+    assert world.requests[0].url.params["is_active"] == "eq.true"
