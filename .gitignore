@@ -22,5 +22,4 @@ supabase/.temp/
 .idea/
 .DS_Store
 Thumbs.db
-*.md
 .claude/settings.local.json
