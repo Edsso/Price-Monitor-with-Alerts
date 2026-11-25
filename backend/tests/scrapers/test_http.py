@@ -98,6 +98,19 @@ async def test_spaces_concurrent_requests_to_same_host() -> None:
     assert time.sleeps == [2, 2]
 
 
+async def test_does_not_keep_cookies() -> None:
+    cookies: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        cookies.append(request.headers.get("Cookie"))
+        return httpx.Response(200, headers={"Set-Cookie": "sessao=1; Path=/"})
+
+    async with make_fetcher(handler) as fetcher:
+        await fetcher.fetch(URL, DOMAINS)
+        await fetcher.fetch(URL, DOMAINS)
+    assert cookies == [None, None]
+
+
 async def test_sends_realistic_user_agent() -> None:
     agents: list[str] = []
 

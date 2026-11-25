@@ -18,9 +18,9 @@ class Settings(BaseSettings):
 
     scraper_user_agent: str = DEFAULT_USER_AGENT
     scraper_timeout_seconds: float = Field(default=15.0, gt=0)
-    scraper_max_attempts: int = Field(default=3, ge=1)
-    scraper_backoff_seconds: float = Field(default=1.0, ge=0)
-    scraper_min_interval_seconds: float = Field(default=2.0, ge=0)
+    scraper_max_attempts: int = Field(default=4, ge=1)
+    scraper_backoff_seconds: float = Field(default=3.0, ge=0)
+    scraper_min_interval_seconds: float = Field(default=5.0, ge=0)
 
 
 class SupabaseSettings(BaseSettings):

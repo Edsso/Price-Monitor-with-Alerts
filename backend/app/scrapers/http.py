@@ -5,6 +5,7 @@ import random
 import time
 from collections import defaultdict
 from collections.abc import Awaitable, Callable
+from http.cookiejar import CookieJar, DefaultCookiePolicy
 from types import TracebackType
 from typing import Self
 
@@ -48,6 +49,8 @@ class PageFetcher:
             transport=transport,
             timeout=settings.scraper_timeout_seconds,
             follow_redirects=False,
+            # Sem cookies: a consulta de um usuário não influencia a de outro.
+            cookies=CookieJar(DefaultCookiePolicy(allowed_domains=[])),
             headers={
                 "User-Agent": settings.scraper_user_agent,
                 "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
